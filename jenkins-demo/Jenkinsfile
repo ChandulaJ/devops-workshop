@@ -57,15 +57,15 @@ pipeline {
             }
             post {
                 always {
-                    // Publish coverage report
-                    publishHTML(
-                        target: [
-                            reportDir: 'jenkins-demo/coverage',
-                            reportFiles: 'index.html',
-                            reportName: 'Coverage Report',
-                            allowMissing: true
-                        ]
+                    echo '✅ Tests completed'
+                    // Archive coverage report
+                    archiveArtifacts(
+                        artifacts: 'jenkins-demo/coverage/**',
+                        allowEmptyArchive: true,
+                        fingerprint: true
                     )
+                    // Note: Install 'HTML Publisher' plugin to publish coverage report
+                    // publishHTML(target: [reportDir: 'jenkins-demo/coverage', reportFiles: 'index.html', reportName: 'Coverage Report'])
                 }
             }
         }
