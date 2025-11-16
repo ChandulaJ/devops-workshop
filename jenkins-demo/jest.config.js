@@ -22,12 +22,5 @@ module.exports = {
         'text',
         'lcov',
         'html'
-    ],
-    reporters: [
-        'default',
-        ['jest-junit', {
-            outputDirectory: '.',
-            outputName: 'junit.xml',
-        }]
     ]
 };

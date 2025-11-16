@@ -57,11 +57,6 @@ pipeline {
             }
             post {
                 always {
-                    // Publish test results
-                    junit(
-                        testResults: '**/junit.xml',
-                        allowEmptyResults: true
-                    )
                     // Publish coverage report
                     publishHTML(
                         target: [
