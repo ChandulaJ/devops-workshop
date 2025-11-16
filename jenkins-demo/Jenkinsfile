@@ -1,0 +1,193 @@
+pipeline {
+    agent any
+    
+    environment {
+        // Define environment variables
+        APP_NAME = 'jenkins-cicd-demo'
+        DOCKER_IMAGE = 'jenkins-cicd-demo'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        NODE_VERSION = '16'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo '📥 Checking out source code...'
+                checkout scm
+                sh 'git log -1 --pretty=format:"%h - %an: %s"'
+            }
+        }
+        
+        stage('Environment Setup') {
+            steps {
+                echo '🔧 Setting up environment...'
+                sh '''
+                    echo "Node Version: $(node --version)"
+                    echo "NPM Version: $(npm --version)"
+                    echo "Build Number: ${BUILD_NUMBER}"
+                    echo "Workspace: ${WORKSPACE}"
+                '''
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                echo '📦 Installing dependencies...'
+                dir('jenkins-demo') {
+                    sh 'npm ci --prefer-offline --no-audit'
+                }
+            }
+        }
+        
+        stage('Lint Code') {
+            steps {
+                echo '🔍 Running code linting...'
+                dir('jenkins-demo') {
+                    sh 'npm run lint || echo "Linting completed with warnings"'
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                echo '🧪 Running tests...'
+                dir('jenkins-demo') {
+                    sh 'npm test -- --ci --coverage'
+                }
+            }
+            post {
+                always {
+                    // Publish test results
+                    junit(
+                        testResults: '**/junit.xml',
+                        allowEmptyResults: true
+                    )
+                    // Publish coverage report
+                    publishHTML(
+                        target: [
+                            reportDir: 'jenkins-demo/coverage',
+                            reportFiles: 'index.html',
+                            reportName: 'Coverage Report',
+                            allowMissing: true
+                        ]
+                    )
+                }
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                echo '🐳 Building Docker image...'
+                script {
+                    dir('jenkins-demo') {
+                        dockerImage = docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                        docker.build("${DOCKER_IMAGE}:latest")
+                    }
+                }
+            }
+        }
+        
+        stage('Test Docker Image') {
+            steps {
+                echo '🔬 Testing Docker image...'
+                script {
+                    dir('jenkins-demo') {
+                        sh """
+                            docker run -d --name test-container-${BUILD_NUMBER} -p 3001:3000 ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            sleep 5
+                            curl -f http://localhost:3001/health || exit 1
+                            docker stop test-container-${BUILD_NUMBER}
+                            docker rm test-container-${BUILD_NUMBER}
+                        """
+                    }
+                }
+            }
+        }
+        
+        stage('Push to Registry') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo '📤 Pushing Docker image to registry...'
+                script {
+                    // This is a placeholder - in production, you would push to DockerHub, ECR, etc.
+                    echo "Would push ${DOCKER_IMAGE}:${DOCKER_TAG} to registry"
+                    // docker.withRegistry('https://registry.example.com', 'docker-credentials') {
+                    //     dockerImage.push("${DOCKER_TAG}")
+                    //     dockerImage.push("latest")
+                    // }
+                }
+            }
+        }
+        
+        stage('Deploy to Development') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                echo '🚀 Deploying to Development environment...'
+                script {
+                    sh """
+                        echo "Deploying version ${DOCKER_TAG} to DEV"
+                        # Add your deployment commands here
+                        # kubectl apply -f k8s/dev/
+                        # or docker-compose up -d
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy to Staging') {
+            when {
+                branch 'staging'
+            }
+            steps {
+                echo '🎯 Deploying to Staging environment...'
+                script {
+                    sh """
+                        echo "Deploying version ${DOCKER_TAG} to STAGING"
+                        # Add your deployment commands here
+                    """
+                }
+            }
+        }
+        
+        stage('Deploy to Production') {
+            when {
+                branch 'main'
+            }
+            steps {
+                echo '⚠️  Ready to deploy to Production...'
+                input message: 'Deploy to Production?', ok: 'Deploy'
+                script {
+                    sh """
+                        echo "Deploying version ${DOCKER_TAG} to PRODUCTION"
+                        # Add your production deployment commands here
+                    """
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '🧹 Cleaning up...'
+            cleanWs(
+                deleteDirs: true,
+                patterns: [[pattern: 'node_modules', type: 'INCLUDE']]
+            )
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
+            // Send notifications (email, Slack, etc.)
+        }
+        failure {
+            echo '❌ Pipeline failed!'
+            // Send failure notifications
+        }
+        unstable {
+            echo '⚠️  Pipeline is unstable!'
+        }
+    }
+}
