@@ -5,16 +5,21 @@
 .terraform/
 .terraform.lock.hcl
 tfplan
+tfplan.binary
 
 # Terraform variable files (may contain sensitive data)
 terraform.tfvars
 *.auto.tfvars
+*.tfvars.json
 
-# Ansible retry files
+# Terraform crash logs
+crash.log
+crash.*.log
+
+# Ansible files
 *.retry
-
-# Ansible vault password file
 .vault_pass
+*.vault
 
 # SSH keys
 *.pem
@@ -25,26 +30,45 @@ id_rsa.pub
 # OS files
 .DS_Store
 Thumbs.db
-
-# Editor files
-.vscode/
-.idea/
 *.swp
 *.swo
 *~
 
+# Editor files
+.vscode/
+.idea/
+*.code-workspace
+
 # Logs
 *.log
+logs/
 
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
+venv/
+env/
 
 # Environment files
 .env
 .env.local
+.env.*.local
 
-# Auto-generated files
-ansible/inventory/hosts
-ansible/group_vars/all.yml
+# Auto-generated Ansible files
+ansible/inventory/dev/hosts
+ansible/inventory/staging/hosts
+ansible/inventory/production/hosts
+ansible/inventory/*/group_vars/all.yml
+
+# Fact cache
+/tmp/ansible_facts
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,13 @@
+---
+# Application variables
+app_name: "devops-workshop"
+app_port: 3000
+app_user: "appuser"
+app_directory: "/opt/{{ app_name }}"
+node_version: "18"
+environment: "production"
+
+# Application environment variables
+app_env_vars:
+  NODE_ENV: "{{ environment }}"
+  PORT: "{{ app_port }}"

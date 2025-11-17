@@ -1,175 +1,130 @@
-# Infrastructure as Code Demo - Terraform + Ansible
+# Production-Grade Infrastructure as Code with Terraform & Ansible
 
-This project demonstrates how to use **Terraform** for infrastructure provisioning and **Ansible** for configuration management to deploy a Node.js application on AWS.
+A comprehensive, production-ready Infrastructure as Code example demonstrating best practices for deploying applications on AWS using Terraform and Ansible with multi-environment support.
 
-## 📋 Overview
+## 🎯 Key Features
 
-This IaC example provisions:
-- AWS VPC with public subnets across multiple availability zones
-- EC2 instances for application hosting
-- Security groups with appropriate firewall rules
-- Automatic inventory generation for Ansible
+### Infrastructure (Terraform)
+- **Modular Architecture**: Reusable modules for networking, compute, and security
+- **Multi-Environment**: Separate configurations for dev, staging, and production
+- **Remote State**: S3 backend with DynamoDB locking
+- **Auto Scaling**: Production-grade ASG with dynamic scaling policies
+- **High Availability**: Multi-AZ deployment with NAT gateways
+- **Security**: VPC Flow Logs, encrypted EBS, IMDSv2, Network ACLs
+- **Monitoring**: CloudWatch metrics, alarms, and SNS notifications
+- **IAM Best Practices**: Instance profiles with least-privilege permissions
 
-Then uses Ansible to:
-- Install and configure Node.js
-- Deploy the application
-- Set up Nginx as a reverse proxy
-- Configure systemd service for the app
-- Set up firewall rules with UFW
+### Configuration (Ansible)
+- **Multi-Environment**: Environment-specific inventories and variables
+- **Automated Deployment**: Complete application setup and configuration
+- **Service Management**: Systemd integration with auto-restart
+- **Reverse Proxy**: Nginx configuration with health checks
+- **Idempotent**: Safe to run multiple times
 
-## 🏗️ Architecture
+## 🏗️ Architecture by Environment
 
-```
-┌─────────────────────────────────────────┐
-│           AWS VPC (10.0.0.0/16)         │
-│  ┌────────────────────────────────────┐ │
-│  │  Public Subnet (Multi-AZ)          │ │
-│  │  ┌──────────────────────────────┐  │ │
-│  │  │  EC2 Instance                │  │ │
-│  │  │  - Node.js App (Port 3000)   │  │ │
-│  │  │  - Nginx (Port 80)           │  │ │
-│  │  │  - Systemd Service           │  │ │
-│  │  └──────────────────────────────┘  │ │
-│  └────────────────────────────────────┘ │
-│                                         │
-│  Security Group:                        │
-│  - Port 22 (SSH)                        │
-│  - Port 80 (HTTP)                       │
-│  - Port 3000 (App)                      │
-└─────────────────────────────────────────┘
-```
+### Development Environment
+- **Cost**: ~$10-15/month
+- 1x t3.micro instance
+- Single NAT gateway
+- Basic monitoring
+- SSH access enabled
+
+### Staging Environment
+- **Cost**: ~$50-75/month
+- 2x t3.small instances (or ASG)
+- Multi-AZ with NAT gateways
+- Enhanced monitoring & alarms
+- VPC Flow Logs enabled
+
+### Production Environment
+- **Cost**: ~$200-500/month
+- Auto Scaling (2-10x t3.medium)
+- Multi-AZ redundancy
+- Application Load Balancer
+- Full security & compliance
+- CloudWatch agent & SNS alerts
+- SSH disabled (SSM only)
 
 ## 📁 Project Structure
 
 ```
 infra-demo/
-├── terraform/              # Terraform configuration
-│   ├── main.tf            # Main infrastructure definitions
-│   ├── variables.tf       # Input variables
-│   ├── outputs.tf         # Output values
-│   ├── terraform.tfvars.example
-│   └── templates/         # Template files for Ansible
-│       ├── inventory.tpl  # Ansible inventory template
-│       └── vars.tpl       # Ansible variables template
+├── terraform/
+│   ├── modules/                # Reusable modules
+│   │   ├── networking/        # VPC, subnets, NAT, IGW
+│   │   ├── compute/           # EC2, ASG, launch templates
+│   │   └── security/          # Security groups, NACLs
+│   ├── environments/          # Environment configs
+│   │   ├── dev/              # Development
+│   │   ├── staging/          # Staging
+│   │   └── production/       # Production
+│   ├── templates/            # Jinja templates
+│   └── scripts/              # Helper scripts
 │
-├── ansible/               # Ansible configuration
-│   ├── ansible.cfg        # Ansible settings
-│   ├── playbook.yml       # Main deployment playbook
-│   ├── verify.yml         # Verification playbook
-│   ├── group_vars/
-│   │   └── all.yml        # Group variables
-│   ├── inventory/
-│   │   └── hosts          # Inventory file (auto-generated)
-│   └── templates/
-│       ├── app.service.j2 # Systemd service template
-│       └── nginx.conf.j2  # Nginx configuration template
+├── ansible/
+│   ├── playbook.yml          # Main deployment
+│   ├── verify.yml            # Verification
+│   ├── inventory/            # Per-environment
+│   │   ├── dev/
+│   │   ├── staging/
+│   │   └── production/
+│   └── templates/            # Service configs
 │
-└── scripts/               # Helper scripts
-    ├── deploy.sh          # Full deployment script
-    └── destroy.sh         # Cleanup script
+└── docs/                     # Documentation
 ```
 
-## 🚀 Prerequisites
+## 🚀 Quick Start
 
-### Required Software
-
-1. **Terraform** (>= 1.0)
-   ```bash
-   # Download from https://www.terraform.io/downloads.html
-   terraform --version
-   ```
-
-2. **Ansible** (>= 2.10)
-   ```bash
-   # Install via pip
-   pip install ansible
-   ansible --version
-   ```
-
-3. **AWS CLI** (configured with credentials)
-   ```bash
-   # Install from https://aws.amazon.com/cli/
-   aws configure
-   ```
-
-4. **SSH Key Pair**
-   ```bash
-   # Generate if you don't have one
-   ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
-   ```
-
-### AWS Configuration
-
-Ensure you have:
-- AWS account with appropriate permissions
-- AWS credentials configured (`~/.aws/credentials`)
-- Default region set (`~/.aws/config`)
-
-## 📝 Quick Start
-
-### 1. Configure Variables
+### Prerequisites
 
 ```bash
-cd terraform
+# Required tools
+terraform --version  # >= 1.0
+ansible --version    # >= 2.10
+aws configure        # Configure AWS credentials
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa  # Generate SSH key if needed
+```
+
+### Step 1: Set Up Remote State (One-Time)
+
+```bash
+cd terraform/scripts
+chmod +x setup-backend.sh
+./setup-backend.sh
+```
+
+Creates S3 buckets and DynamoDB table for state management.
+
+### Step 2: Deploy Infrastructure
+
+```bash
+# Deploy to development
+cd terraform/environments/dev
 cp terraform.tfvars.example terraform.tfvars
-```
+# Edit terraform.tfvars with your settings
 
-Edit `terraform.tfvars` with your settings:
-```hcl
-aws_region       = "us-east-1"
-environment      = "dev"
-instance_count   = 1
-allowed_ssh_cidr = ["YOUR_IP/32"]  # Replace with your IP
-```
-
-### 2. Deploy Infrastructure with Terraform
-
-```bash
-# Initialize Terraform
-cd terraform
 terraform init
-
-# Review the plan
 terraform plan
-
-# Apply the configuration
 terraform apply
 ```
 
-Terraform will:
-- Create VPC, subnets, and networking components
-- Launch EC2 instances
-- Generate Ansible inventory automatically
-- Output connection information
-
-### 3. Deploy Application with Ansible
+### Step 3: Deploy Application
 
 ```bash
-# Navigate to ansible directory
-cd ../ansible
-
-# Test connectivity
-ansible webservers -m ping
-
-# Deploy the application
-ansible-playbook playbook.yml
-
-# Verify deployment
-ansible-playbook verify.yml
+cd ../../../ansible
+ansible-playbook -i inventory/dev/hosts playbook.yml
 ```
 
-### 4. Access the Application
-
-After successful deployment:
+### Step 4: Verify & Access
 
 ```bash
-# Get the application URL from Terraform output
-cd ../terraform
-terraform output application_urls
+# Verify deployment
+ansible-playbook -i inventory/dev/hosts verify.yml
 
-# Or access via:
-# http://<instance-public-ip>        (via Nginx on port 80)
-# http://<instance-public-ip>:3000   (directly on port 3000)
+# Get application URLs
+cd ../terraform/environments/dev
+terraform output application_urls
 ```
 
 ## 🔧 Using the Helper Scripts

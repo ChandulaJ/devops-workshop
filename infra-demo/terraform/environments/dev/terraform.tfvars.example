@@ -1,0 +1,25 @@
+# Development environment configuration
+# Copy to terraform.tfvars and customize
+
+aws_region = "us-east-1"
+project_name = "devops-workshop"
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+public_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24"]
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# Compute Configuration
+instance_type = "t3.micro"
+instance_count = 1
+
+# Application Configuration
+app_port = 3000
+node_version = "18"
+
+# Security Configuration
+# IMPORTANT: Replace with your IP address for better security!
+allowed_ssh_cidrs = ["0.0.0.0/0"]
+
+# SSH Key
+public_key_path = "~/.ssh/id_rsa.pub"
