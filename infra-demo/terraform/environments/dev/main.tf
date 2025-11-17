@@ -13,6 +13,11 @@ terraform {
     }
   }
 
+# bucket - Stores terraform.tfstate file remotely (not on your laptop)
+# key - File path within bucket (dev/terraform.tfstate, staging/terraform.tfstate, etc.)
+# encrypt - Encrypts state file (contains sensitive data like IPs, passwords)
+# dynamodb_table - Prevents multiple users from running terraform apply simultaneously (state locking)
+  
   # Remote state backend (recommended for production)
   backend "s3" {
     bucket         = "devops-workshop-terraform-state-dev"  # Change this to your bucket
@@ -20,8 +25,6 @@ terraform {
     region         = "us-east-1"
     encrypt        = true
     dynamodb_table = "terraform-state-lock"
-    # Uncomment after creating the backend resources
-    # See: scripts/setup-backend.sh
   }
 }
 
