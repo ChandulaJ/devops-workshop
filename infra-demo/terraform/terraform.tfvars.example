@@ -1,0 +1,17 @@
+# AWS Configuration
+aws_region = "us-east-1"
+environment = "dev"
+project_name = "devops-workshop"
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# EC2 Configuration
+instance_type = "t3.micro"
+instance_count = 1
+use_elastic_ip = false
+
+# Security
+allowed_ssh_cidr = ["0.0.0.0/0"]  # Replace with your IP address for better security
+public_key_path = "~/.ssh/id_rsa.pub"

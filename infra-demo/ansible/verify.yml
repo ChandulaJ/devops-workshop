@@ -1,0 +1,43 @@
+---
+- name: Verify Application Deployment
+  hosts: webservers
+  gather_facts: yes
+
+  tasks:
+    - name: Check if application service is running
+      systemd:
+        name: "{{ app_name }}"
+      register: service_status
+
+    - name: Display service status
+      debug:
+        msg: "Service {{ app_name }} is {{ service_status.status.ActiveState }}"
+
+    - name: Check application health endpoint
+      uri:
+        url: "http://localhost:{{ app_port }}/health"
+        return_content: yes
+      register: health_check
+
+    - name: Display health check response
+      debug:
+        var: health_check.json
+
+    - name: Check Nginx status
+      systemd:
+        name: nginx
+      register: nginx_status
+
+    - name: Display Nginx status
+      debug:
+        msg: "Nginx is {{ nginx_status.status.ActiveState }}"
+
+    - name: Test application through Nginx
+      uri:
+        url: "http://localhost:80/health"
+        return_content: yes
+      register: nginx_health
+
+    - name: Display Nginx proxy response
+      debug:
+        var: nginx_health.json
